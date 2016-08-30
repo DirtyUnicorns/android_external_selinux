@@ -10,6 +10,8 @@ extern "C" {
 
 /* Return 1 if we are running on a SELinux kernel, or 0 if not or -1 if we get an error. */
 extern int is_selinux_enabled(void);
+/* Return 1 if we are running on a enforced, or 0 if not or -1 if we get an error. */
+extern int selinux_status_getenforce(void);
 /* Return 1 if we are running on a SELinux MLS kernel, or 0 otherwise. */
 extern int is_selinux_mls_enabled(void);
 
@@ -29,18 +31,18 @@ extern void freeconary(char ** con);
 extern int getcon(char ** con);
 extern int getcon_raw(char ** con);
 
-/* Set the current security context to con.  
+/* Set the current security context to con.
    Note that use of this function requires that the entire application
-   be trusted to maintain any desired separation between the old and new 
-   security contexts, unlike exec-based transitions performed via setexeccon.  
-   When possible, decompose your application and use setexeccon()+execve() 
+   be trusted to maintain any desired separation between the old and new
+   security contexts, unlike exec-based transitions performed via setexeccon.
+   When possible, decompose your application and use setexeccon()+execve()
    instead. Note that the application may lose access to its open descriptors
    as a result of a setcon() unless policy allows it to use descriptors opened
    by the old context. */
 extern int setcon(const char * con);
 extern int setcon_raw(const char * con);
 
-/* Get context of process identified by pid, and 
+/* Get context of process identified by pid, and
    set *con to refer to it.  Caller must free via freecon. */
 extern int getpidcon(pid_t pid, char ** con);
 extern int getpidcon_raw(pid_t pid, char ** con);
@@ -56,7 +58,7 @@ extern int getprevcon_raw(char ** con);
 extern int getexeccon(char ** con);
 extern int getexeccon_raw(char ** con);
 
-/* Set exec security context for the next execve. 
+/* Set exec security context for the next execve.
    Call with NULL if you want to reset to the default. */
 extern int setexeccon(const char * con);
 extern int setexeccon_raw(const char * con);
@@ -147,7 +149,7 @@ struct selinux_opt {
 union selinux_callback {
 	/* log the printf-style format and arguments,
 	   with the type code indicating the type of message */
-	int 
+	int
 #ifdef __GNUC__
 __attribute__ ((format(printf, 2, 3)))
 #endif
@@ -246,7 +248,7 @@ extern int security_compute_member_raw(const char * scon,
 				       security_class_t tclass,
 				       char ** newcon);
 
-/* Compute the set of reachable user contexts and set *con to refer to 
+/* Compute the set of reachable user contexts and set *con to refer to
    the NULL-terminated array of contexts.  Caller must free via freeconary. */
 extern int security_compute_user(const char * scon,
 				 const char *username,
@@ -271,7 +273,7 @@ extern int security_validatetrans_raw(const char *scon,
 /* Load a policy configuration. */
 extern int security_load_policy(void *data, size_t len);
 
-/* Get the context of an initial kernel security identifier by name.  
+/* Get the context of an initial kernel security identifier by name.
    Caller must free via freecon */
 extern int security_get_initial_context(const char *name,
 					char ** con);
@@ -283,17 +285,17 @@ extern int security_get_initial_context_raw(const char *name,
  * This function provides a higher level interface for loading policy
  * than security_load_policy, internally determining the right policy
  * version, locating and opening the policy file, mapping it into memory,
- * manipulating it as needed for current boolean settings and/or local 
+ * manipulating it as needed for current boolean settings and/or local
  * definitions, and then calling security_load_policy to load it.
  *
  * 'preservebools' is no longer supported, set to 0.
  */
 extern int selinux_mkload_policy(int preservebools);
 
-/* 
+/*
  * Perform the initial policy load.
  * This function determines the desired enforcing mode, sets the
- * the *enforce argument accordingly for the caller to use, sets the 
+ * the *enforce argument accordingly for the caller to use, sets the
  * SELinux kernel enforcing status to match it, and loads the policy.
  * It also internally handles the initial selinuxfs mount required to
  * perform these actions.
@@ -428,7 +430,7 @@ extern void set_matchpathcon_printf(void (*f) (const char *fmt, ...));
 
 /* Set the function used by matchpathcon_init when checking the
    validity of a context in the file contexts configuration.  If not set,
-   then this defaults to a test based on security_check_context().  
+   then this defaults to a test based on security_check_context().
    The function is also responsible for reporting any such error, and
    may include the 'path' and 'lineno' in such error messages. */
 extern void set_matchpathcon_invalidcon(int (*f) (const char *path,
@@ -450,12 +452,12 @@ extern void set_matchpathcon_canoncon(int (*f) (const char *path,
 extern void set_matchpathcon_flags(unsigned int flags);
 
 /* Load the file contexts configuration specified by 'path'
-   into memory for use by subsequent matchpathcon calls.  
+   into memory for use by subsequent matchpathcon calls.
    If 'path' is NULL, then load the active file contexts configuration,
    i.e. the path returned by selinux_file_context_path().
    Unless the MATCHPATHCON_BASEONLY flag has been set, this
-   function also checks for a 'path'.homedirs file and 
-   a 'path'.local file and loads additional specifications 
+   function also checks for a 'path'.homedirs file and
+   a 'path'.local file and loads additional specifications
    from them if present. */
 extern int matchpathcon_init(const char *path);
 
@@ -480,7 +482,7 @@ extern int realpath_not_final(const char *name, char *resolved_path);
 extern int matchpathcon(const char *path,
 			mode_t mode, char ** con);
 
-/* Same as above, but return a specification index for 
+/* Same as above, but return a specification index for
    later use in a matchpathcon_filespec_add() call - see below. */
 extern int matchpathcon_index(const char *path,
 			      mode_t mode, char ** con);
@@ -488,7 +490,7 @@ extern int matchpathcon_index(const char *path,
 /* Maintain an association between an inode and a specification index,
    and check whether a conflicting specification is already associated
    with the same inode (e.g. due to multiple hard links).  If so, then
-   use the latter of the two specifications based on their order in the 
+   use the latter of the two specifications based on their order in the
    file contexts configuration.  Return the used specification index. */
 extern int matchpathcon_filespec_add(ino_t ino, int specind, const char *file);
 
@@ -503,14 +505,14 @@ extern void matchpathcon_filespec_eval(void);
    The 'str' is used as a prefix for any warning messages. */
 extern void matchpathcon_checkmatches(char *str);
 
-/* Match the specified media and against the media contexts 
+/* Match the specified media and against the media contexts
    configuration and set *con to refer to the resulting context.
    Caller must free con via freecon. */
 extern int matchmediacon(const char *media, char ** con);
 
 /*
-  selinux_getenforcemode reads the /etc/selinux/config file and determines 
-  whether the machine should be started in enforcing (1), permissive (0) or 
+  selinux_getenforcemode reads the /etc/selinux/config file and determines
+  whether the machine should be started in enforcing (1), permissive (0) or
   disabled (-1) mode.
  */
 extern int selinux_getenforcemode(int *enforce);
@@ -524,15 +526,15 @@ extern int selinux_getenforcemode(int *enforce);
 extern char *selinux_boolean_sub(const char *boolean_name);
 
 /*
-  selinux_getpolicytype reads the /etc/selinux/config file and determines 
-  what the default policy for the machine is.  Calling application must 
+  selinux_getpolicytype reads the /etc/selinux/config file and determines
+  what the default policy for the machine is.  Calling application must
   free policytype.
  */
 extern int selinux_getpolicytype(char **policytype);
 
 /*
-  selinux_policy_root reads the /etc/selinux/config file and returns 
-  the directory path under which the compiled policy file and context 
+  selinux_policy_root reads the /etc/selinux/config file and returns
+  the directory path under which the compiled policy file and context
   configuration files exist.
  */
 extern const char *selinux_policy_root(void);
@@ -543,7 +545,7 @@ extern const char *selinux_policy_root(void);
  */
 extern int selinux_set_policy_root(const char *rootpath);
 
-/* These functions return the paths to specific files under the 
+/* These functions return the paths to specific files under the
    policy root directory. */
 extern const char *selinux_current_policy_path(void);
 extern const char *selinux_binary_policy_path(void);
@@ -592,8 +594,8 @@ extern const char *selinux_path(void);
  * Check the AVC to determine whether the @perm permissions are granted
  * for the SID pair (@scon, @tcon), interpreting the permissions
  * based on @tclass.
- * Return %0 if all @perm permissions are granted, -%1 with 
- * @errno set to %EACCES if any permissions are denied or to another 
+ * Return %0 if all @perm permissions are granted, -%1 with
+ * @errno set to %EACCES if any permissions are denied or to another
  * value upon other errors.
  * If auditing or logging is configured the appropriate callbacks will be called
  * and passed the auditdata field
@@ -610,7 +612,7 @@ extern int checkPasswdAccess(access_vector_t requested);
 extern int selinux_check_securetty_context(const char * tty_context);
 
 /* Set the path to the selinuxfs mount point explicitly.
-   Normally, this is determined automatically during libselinux 
+   Normally, this is determined automatically during libselinux
    initialization, but this is not always possible, e.g. for /sbin/init
    which performs the initial mount of selinuxfs. */
 extern void set_selinuxmnt(const char *mnt);
@@ -632,13 +634,13 @@ extern int rpm_execcon(unsigned int verified,
 		       char *const argv[], char *const envp[]);
 #endif
 
-/* Returns whether a file context is customizable, and should not 
+/* Returns whether a file context is customizable, and should not
    be relabeled . */
 extern int is_context_customizable(const char * scontext);
 
 /* Perform context translation between the human-readable format
-   ("translated") and the internal system format ("raw"). 
-   Caller must free the resulting context via freecon.  
+   ("translated") and the internal system format ("raw").
+   Caller must free the resulting context via freecon.
    Returns -1 upon an error or 0 otherwise.
    If passed NULL, sets the returned context to NULL and returns 0. */
 extern int selinux_trans_to_raw_context(const char * trans,
@@ -654,26 +656,26 @@ extern int selinux_raw_to_trans_context(const char * raw,
 extern int selinux_raw_context_to_color(const char * raw,
 					char **color_str);
 
-/* Get the SELinux username and level to use for a given Linux username. 
+/* Get the SELinux username and level to use for a given Linux username.
    These values may then be passed into the get_ordered_context_list*
    and get_default_context* functions to obtain a context for the user.
    Returns 0 on success or -1 otherwise.
    Caller must free the returned strings via free. */
 extern int getseuserbyname(const char *linuxuser, char **seuser, char **level);
 
-/* Get the SELinux username and level to use for a given Linux username and service. 
+/* Get the SELinux username and level to use for a given Linux username and service.
    These values may then be passed into the get_ordered_context_list*
    and get_default_context* functions to obtain a context for the user.
    Returns 0 on success or -1 otherwise.
    Caller must free the returned strings via free. */
-extern int getseuser(const char *username, const char *service, 
+extern int getseuser(const char *username, const char *service,
 		     char **r_seuser, char **r_level);
 
 /* Compare two file contexts, return 0 if equivalent. */
 extern int selinux_file_context_cmp(const char * a,
 			     const char * b);
 
-/* 
+/*
  * Verify the context of the file 'path' against policy.
  * Return 1 if match, 0 if not and -1 on error.
  */
@@ -682,7 +684,7 @@ extern int selinux_file_context_verify(const char *path, mode_t mode);
 /* This function sets the file context on to the system defaults returns 0 on success */
 extern int selinux_lsetfilecon_default(const char *path);
 
-/* 
+/*
  * Force a reset of the loaded configuration
  * WARNING: This is not thread safe. Be very sure that no other threads
  * are calling into libselinux when this is called.
